@@ -24,7 +24,7 @@ export default function HomePage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 mt-6">
         <div>
           <h2 className="text-base font-semibold text-gray-900">Resumen financiero</h2>
           <p className="text-xs text-gray-400 mt-0.5">Visión general de tu situación actual</p>

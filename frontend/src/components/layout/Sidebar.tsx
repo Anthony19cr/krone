@@ -62,7 +62,7 @@ export function Sidebar() {
                 isActive
                   ? {
                       backgroundColor: "var(--color-secondary)",
-                      color: "var(--color-primary)",
+                      color: "var(--color-accent)",
                     }
                   : {}
               }
