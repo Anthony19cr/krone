@@ -7,14 +7,11 @@ function calculateProjectedDate(
   monthlyBalance: number
 ): string | null {
   if (monthlyBalance <= 0) return null
-
   const remaining = targetAmount - currentAmount
   if (remaining <= 0) return "Completada"
-
   const monthsNeeded = Math.ceil(remaining / monthlyBalance)
   const projected = new Date()
   projected.setMonth(projected.getMonth() + monthsNeeded)
-
   return projected.toISOString().slice(0, 7)
 }
 
@@ -29,34 +26,45 @@ export const getSavingGoals = async (_req: Request, res: Response) => {
   const debts = await prisma.debt.findMany({ where: { userId: 1 } })
 
   const totalIncome = incomes.reduce((sum, i) => {
-    const amount = Number(i.amount)
-    return sum + (i.frequency === "BIWEEKLY" ? amount * 2 : amount)
+    return sum + (i.frequency === "BIWEEKLY" ? Number(i.amount) * 2 : Number(i.amount))
   }, 0)
 
   const totalExpenses = expenses.reduce((sum, e) => {
-    const amount = Number(e.amount)
-    return sum + (e.frequency === "BIWEEKLY" ? amount * 2 : amount)
+    return sum + (e.frequency === "BIWEEKLY" ? Number(e.amount) * 2 : Number(e.amount))
   }, 0)
 
   const totalDebtPayments = debts.reduce((sum, d) => sum + Number(d.monthlyPayment), 0)
-
   const monthlyBalance = totalIncome - totalExpenses - totalDebtPayments
 
-  const goalsWithProjection = goals.map((goal) => ({
-    ...goal,
-    percentage: Math.min(100, Math.round((Number(goal.currentAmount) / Number(goal.targetAmount)) * 100)),
-    projectedDate: calculateProjectedDate(
+  const goalsWithProjection = goals.map((goal) => {
+    const projectedDate = calculateProjectedDate(
       Number(goal.targetAmount),
       Number(goal.currentAmount),
       monthlyBalance
-    ),
-  }))
+    )
+
+    const targetDate = goal.targetDate
+      ? goal.targetDate.toISOString().slice(0, 7)
+      : null
+
+    const onTrack = projectedDate && targetDate
+      ? projectedDate <= targetDate
+      : null
+
+    return {
+      ...goal,
+      percentage: Math.min(100, Math.round((Number(goal.currentAmount) / Number(goal.targetAmount)) * 100)),
+      projectedDate,
+      targetDate,
+      onTrack,
+    }
+  })
 
   res.json(goalsWithProjection)
 }
 
 export const createSavingGoal = async (req: Request, res: Response) => {
-  const { name, targetAmount, currentAmount } = req.body
+  const { name, targetAmount, currentAmount, targetDate } = req.body
 
   if (!name || !targetAmount) {
     res.status(400).json({ error: "name and targetAmount are required" })
@@ -68,6 +76,7 @@ export const createSavingGoal = async (req: Request, res: Response) => {
       name,
       targetAmount,
       currentAmount: currentAmount ?? 0,
+      targetDate: targetDate ? new Date(targetDate) : null,
       userId: 1,
     },
   })
@@ -77,11 +86,16 @@ export const createSavingGoal = async (req: Request, res: Response) => {
 
 export const updateSavingGoal = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, targetAmount, currentAmount } = req.body
+  const { name, targetAmount, currentAmount, targetDate } = req.body
 
   const goal = await prisma.savingGoal.update({
     where: { id: Number(id) },
-    data: { name, targetAmount, currentAmount },
+    data: {
+      name,
+      targetAmount,
+      currentAmount,
+      targetDate: targetDate ? new Date(targetDate) : null,
+    },
   })
 
   res.json(goal)

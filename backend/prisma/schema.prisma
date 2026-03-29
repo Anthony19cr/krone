@@ -137,6 +137,7 @@ model SavingGoal {
   name          String
   targetAmount  Decimal  @db.Decimal(12, 2)
   currentAmount Decimal  @db.Decimal(12, 2) @default(0)
+  targetDate    DateTime?
   userId        Int
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
