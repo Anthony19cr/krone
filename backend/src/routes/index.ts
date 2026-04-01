@@ -5,6 +5,7 @@ import { expensesRouter } from "./expenses.routes.js"
 import { debtsRouter } from "./debts.routes.js"
 import { savingGoalsRouter } from "./savingGoals.routes.js"
 import { summaryRouter } from "./summary.routes.js"
+import { exportRouter } from "./export.routes.js"
 
 export const router = Router()
 
@@ -18,3 +19,4 @@ router.use("/expenses", expensesRouter)
 router.use("/debts", debtsRouter)
 router.use("/saving-goals", savingGoalsRouter)
 router.use("/summary", summaryRouter)
+router.use("/export", exportRouter) 

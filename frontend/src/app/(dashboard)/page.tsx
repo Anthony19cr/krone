@@ -8,6 +8,7 @@ import { CashFlowChart } from "@/components/dashboard/CashFlowChart"
 import { CategoryChart } from "@/components/dashboard/CategoryChart"
 import { HistoricalChart } from "@/components/dashboard/HistoricalChart"
 import { MonthSelector } from "@/components/dashboard/MonthSelector"
+import { ExportMenu } from "@/components/ui/ExportMenu"
 
 function fmt(n: number) {
   return "₡" + Math.round(n).toLocaleString("en-US")
@@ -29,7 +30,10 @@ export default function HomePage() {
           <h2 className="text-base font-semibold text-gray-900">Resumen financiero</h2>
           <p className="text-xs text-gray-400 mt-0.5">Visión general de tu situación actual</p>
         </div>
-        <MonthSelector month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
+          <div className="flex items-center gap-3">
+            <ExportMenu month={month} year={year} />
+            <MonthSelector month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
+          </div>
       </div>
 
       {/* Alerts */}

@@ -6,6 +6,7 @@ import { useCategories } from "@/hooks/useCategories"
 import { Modal } from "@/components/ui/Modal"
 import { Field, inputClass, selectClass } from "@/components/ui/Field"
 import { MonthSelector } from "@/components/dashboard/MonthSelector"
+import { ExportMenu } from "@/components/ui/ExportMenu"
 
 const FREQ_LABELS: Record<string, string> = {
   MONTHLY: "Mensual",
@@ -90,7 +91,10 @@ export default function IngresosPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <MonthSelector month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
+          <div className="flex items-center gap-3">
+            <ExportMenu month={month} year={year} />
+            <MonthSelector month={month} year={year} onChange={(m, y) => { setMonth(m); setYear(y) }} />
+          </div>
           <button
             onClick={openCreate}
             className="px-4 py-2 text-sm text-white rounded-xl font-medium transition-all hover:opacity-90"
