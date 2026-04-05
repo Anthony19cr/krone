@@ -1,5 +1,12 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
+import { getEffectiveIncomes, getEffectiveExpenses } from "../lib/recurrence.js"
+
+// Convierte month + year a un número comparable: 2026*12 + 4 = 24316
+// Esto permite comparar periodos sin depender de Date ni zonas horarias.
+function periodIndex(year: number, month: number): number {
+  return year * 12 + month
+}
 
 export const getMonthlySummary = async (req: Request, res: Response) => {
   const { month, year } = req.query
@@ -13,14 +20,8 @@ export const getMonthlySummary = async (req: Request, res: Response) => {
   const y = Number(year)
 
   const [incomes, expenses, debts] = await Promise.all([
-    prisma.income.findMany({
-      where: { userId: 1, month: m, year: y },
-      include: { category: true },
-    }),
-    prisma.expense.findMany({
-      where: { userId: 1, month: m, year: y },
-      include: { category: true },
-    }),
+    getEffectiveIncomes(1, m, y),
+    getEffectiveExpenses(1, m, y),
     prisma.debt.findMany({ where: { userId: 1 } }),
   ])
 
@@ -39,7 +40,6 @@ export const getMonthlySummary = async (req: Request, res: Response) => {
   const balance = totalIncome - totalOutflow
   const expenseRatio = totalIncome > 0 ? Math.round((totalOutflow / totalIncome) * 100) : 0
 
-  // expenses grouped by category for donut chart
   const byCategory = expenses.reduce<Record<string, { name: string; color: string; amount: number }>>(
     (acc, e) => {
       const key = e.category.name
@@ -52,10 +52,9 @@ export const getMonthlySummary = async (req: Request, res: Response) => {
     {}
   )
 
-  // alerts
   const alerts: { type: "warning" | "danger"; message: string }[] = []
   if (balance < 0) {
-    alerts.push({ type: "danger", message: `Déficit de ₡${Math.abs(balance).toLocaleString("es-CR")} este mes.` })
+    alerts.push({ type: "danger", message: `Déficit de ${Math.abs(balance).toLocaleString("en-US")} este mes.` })
   } else if (expenseRatio >= 90) {
     alerts.push({ type: "danger", message: `Tus gastos representan el ${expenseRatio}% de tus ingresos.` })
   } else if (expenseRatio >= 75) {
@@ -82,7 +81,6 @@ export const getMonthlySummary = async (req: Request, res: Response) => {
 export const getHistoricalSummary = async (_req: Request, res: Response) => {
   const userId = 1
   const results = []
-
   const now = new Date()
 
   for (let i = 5; i >= 0; i--) {
@@ -91,8 +89,8 @@ export const getHistoricalSummary = async (_req: Request, res: Response) => {
     const y = date.getFullYear()
 
     const [incomes, expenses, debts] = await Promise.all([
-      prisma.income.findMany({ where: { userId, month: m, year: y } }),
-      prisma.expense.findMany({ where: { userId, month: m, year: y } }),
+      getEffectiveIncomes(userId, m, y),
+      getEffectiveExpenses(userId, m, y),
       prisma.debt.findMany({ where: { userId } }),
     ])
 

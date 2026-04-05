@@ -2,16 +2,15 @@
 
 import { useHistoricalSummary } from "@/hooks/useSummary"
 import { HistoricalChart } from "@/components/dashboard/HistoricalChart"
-
-function fmt(n: number) {
-  return "₡" + Math.round(n).toLocaleString("en-US")
-}
+import { useConfig, formatAmount } from "@/hooks/useConfig"
 
 export default function HistorialPage() {
   const { data: historical = [], isLoading } = useHistoricalSummary()
 
   const best = historical.reduce((a, b) => b.balance > a.balance ? b : a, historical[0] ?? { balance: 0, label: "" })
   const worst = historical.reduce((a, b) => b.balance < a.balance ? b : a, historical[0] ?? { balance: 0, label: "" })
+  const { currency } = useConfig()
+  function fmt(n: number) { return formatAmount(n, currency) }
 
   return (
     <div className="max-w-4xl mx-auto">

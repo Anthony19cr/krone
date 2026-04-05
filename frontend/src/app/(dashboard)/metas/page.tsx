@@ -4,10 +4,7 @@ import { useState } from "react"
 import { useSavingGoals, useCreateSavingGoal, useUpdateSavingGoal, useDeleteSavingGoal, type SavingGoal, type SavingGoalPayload } from "@/hooks/useSavingGoals"
 import { Modal } from "@/components/ui/Modal"
 import { Field, inputClass } from "@/components/ui/Field"
-
-function fmt(n: number) {
-  return "₡" + Math.round(n).toLocaleString("en-US")
-}
+import { useConfig, formatAmount, CURRENCIES } from "@/hooks/useConfig"
 
 const empty: SavingGoalPayload = { name: "", targetAmount: 0, currentAmount: 0, targetDate: "" }
 
@@ -20,6 +17,11 @@ export default function MetasPage() {
   const create = useCreateSavingGoal()
   const update = useUpdateSavingGoal()
   const remove = useDeleteSavingGoal()
+
+  const { currency } = useConfig()
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? "₡"
+
+  function fmt(n: number) { return formatAmount(n, currency) }
 
   function openCreate() {
     setEditing(null)
@@ -161,10 +163,10 @@ export default function MetasPage() {
         <Field label="Nombre">
           <input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Fondo de emergencia" />
         </Field>
-        <Field label="Monto objetivo (₡)">
+        <Field label={`Monto objetivo (${currencySymbol})`}>
           <input className={inputClass} type="number" value={form.targetAmount || ""} onChange={e => setForm(f => ({ ...f, targetAmount: Number(e.target.value) }))} placeholder="0" />
         </Field>
-        <Field label="Ahorro actual (₡)">
+        <Field label={`Ahorro actual (${currencySymbol})`}>
           <input className={inputClass} type="number" value={form.currentAmount || ""} onChange={e => setForm(f => ({ ...f, currentAmount: Number(e.target.value) }))} placeholder="0" />
         </Field>
         <Field label="Fecha límite (opcional)">

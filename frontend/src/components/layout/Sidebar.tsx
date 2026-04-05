@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { clsx } from "clsx"
 import { applyTheme, loadSavedTheme, themes } from "@/lib/themes"
 import { useEffect, useState } from "react"
+import { CurrencySelector } from "@/components/ui/CurrencySelector"
 
 const NAV_ITEMS = [
   { href: "/",           label: "Inicio" },
@@ -78,6 +79,11 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Currency selector */}
+      <div className="px-4 py-4 border-t border-gray-100">
+        <CurrencySelector />
+      </div>
 
       {/* Theme switcher */}
       <div className="px-4 py-4 border-t border-gray-100">

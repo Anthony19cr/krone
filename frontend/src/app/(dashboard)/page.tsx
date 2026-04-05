@@ -9,10 +9,8 @@ import { CategoryChart } from "@/components/dashboard/CategoryChart"
 import { HistoricalChart } from "@/components/dashboard/HistoricalChart"
 import { MonthSelector } from "@/components/dashboard/MonthSelector"
 import { ExportMenu } from "@/components/ui/ExportMenu"
+import { useConfig, formatAmount } from "@/hooks/useConfig"
 
-function fmt(n: number) {
-  return "₡" + Math.round(n).toLocaleString("en-US")
-}
 
 export default function HomePage() {
   const now = new Date()
@@ -21,6 +19,9 @@ export default function HomePage() {
 
   const { data: summary, isLoading } = useMonthlySummary(month, year)
   const { data: historical } = useHistoricalSummary()
+
+  const { currency } = useConfig()
+  function fmt(n: number) { return formatAmount(n, currency) }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -37,7 +38,21 @@ export default function HomePage() {
       </div>
 
       {/* Alerts */}
-      {summary?.alerts && <AlertBanner alerts={summary.alerts} />}
+      {summary && summary.balance < 0 && (
+        <div className="px-4 py-2.5 rounded-lg text-sm border bg-red-50 border-red-200 text-red-600 mb-4">
+          Déficit de {fmt(Math.abs(summary.balance))} este mes.
+        </div>
+      )}
+      {summary && summary.expenseRatio >= 90 && summary.balance >= 0 && (
+        <div className="px-4 py-2.5 rounded-lg text-sm border bg-red-50 border-red-200 text-red-600 mb-4">
+          Tus gastos representan el {summary.expenseRatio}% de tus ingresos.
+        </div>
+      )}
+      {summary && summary.expenseRatio >= 75 && summary.expenseRatio < 90 && summary.balance >= 0 && (
+        <div className="px-4 py-2.5 rounded-lg text-sm border bg-amber-50 border-amber-200 text-amber-600 mb-4">
+          Tus gastos están en el {summary.expenseRatio}% de tus ingresos.
+        </div>
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-4 mb-6">

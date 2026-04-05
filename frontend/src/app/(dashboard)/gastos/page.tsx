@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal"
 import { Field, inputClass, selectClass } from "@/components/ui/Field"
 import { MonthSelector } from "@/components/dashboard/MonthSelector"
 import { ExportMenu } from "@/components/ui/ExportMenu"
+import { useConfig, formatAmount, CURRENCIES } from "@/hooks/useConfig"
 
 const FREQ_LABELS: Record<string, string> = {
   MONTHLY: "Mensual",
@@ -18,10 +19,6 @@ const FREQ_COLORS: Record<string, string> = {
   MONTHLY: "bg-emerald-50 text-emerald-600",
   BIWEEKLY: "bg-blue-50 text-blue-600",
   ONE_TIME: "bg-gray-100 text-gray-500",
-}
-
-function fmt(n: number) {
-  return "₡" + Math.round(n).toLocaleString("en-US")
 }
 
 const empty: ExpensePayload = {
@@ -43,6 +40,11 @@ export default function GastosPage() {
   const create = useCreateExpense()
   const update = useUpdateExpense()
   const remove = useDeleteExpense()
+
+  const { currency } = useConfig()
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? "₡"
+
+  function fmt(n: number) { return formatAmount(n, currency) }
 
   function openCreate() {
     setEditing(null)
@@ -167,7 +169,7 @@ export default function GastosPage() {
         <Field label="Nombre">
           <input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Alquiler" />
         </Field>
-        <Field label="Monto (₡)">
+        <Field label={`Monto (${currencySymbol})`}>
           <input className={inputClass} type="number" value={form.amount || ""} onChange={e => setForm(f => ({ ...f, amount: Number(e.target.value) }))} placeholder="0" />
         </Field>
         <Field label="Categoría">

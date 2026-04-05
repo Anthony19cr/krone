@@ -4,10 +4,7 @@ import { useState } from "react"
 import { useDebts, useCreateDebt, useUpdateDebt, useDeleteDebt, type Debt, type DebtPayload } from "@/hooks/useDebts"
 import { Modal } from "@/components/ui/Modal"
 import { Field, inputClass } from "@/components/ui/Field"
-
-function fmt(n: number) {
-  return "₡" + Math.round(n).toLocaleString("en-US")
-}
+import { useConfig, formatAmount, CURRENCIES } from "@/hooks/useConfig"
 
 const empty: DebtPayload = {
   name: "", totalAmount: 0, remainingAmount: 0,
@@ -23,6 +20,11 @@ export default function DeudasPage() {
   const create = useCreateDebt()
   const update = useUpdateDebt()
   const remove = useDeleteDebt()
+
+  const { currency } = useConfig()
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? "₡"
+
+  function fmt(n: number) { return formatAmount(n, currency) }
 
   function openCreate() {
     setEditing(null)
@@ -141,10 +143,10 @@ export default function DeudasPage() {
         <Field label="Nombre">
           <input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Crédito banco" />
         </Field>
-        <Field label="Monto total (₡)">
+        <Field label={`Monto total (${currencySymbol})`}>
           <input className={inputClass} type="number" value={form.totalAmount || ""} onChange={e => setForm(f => ({ ...f, totalAmount: Number(e.target.value) }))} placeholder="0" />
         </Field>
-        <Field label="Saldo restante (₡)">
+        <Field label={`Saldo restante (${currencySymbol})`}>
           <input className={inputClass} type="number" value={form.remainingAmount || ""} onChange={e => setForm(f => ({ ...f, remainingAmount: Number(e.target.value) }))} placeholder="0" />
         </Field>
         <div className="grid grid-cols-2 gap-3">

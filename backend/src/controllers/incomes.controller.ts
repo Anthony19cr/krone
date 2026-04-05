@@ -1,16 +1,21 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
+import { getEffectiveIncomes } from "../lib/recurrence.js"
 import { Frequency } from "@prisma/client"
 
 export const getIncomes = async (req: Request, res: Response) => {
   const { month, year } = req.query
 
+  // Si se pasan mes y año, aplicar lógica de recurrencia
+  if (month && year) {
+    const incomes = await getEffectiveIncomes(1, Number(month), Number(year))
+    res.json(incomes)
+    return
+  }
+
+  // Sin filtro: devuelve todos (útil para admin o debug)
   const incomes = await prisma.income.findMany({
-    where: {
-      userId: 1,
-      ...(month ? { month: Number(month) } : {}),
-      ...(year ? { year: Number(year) } : {}),
-    },
+    where: { userId: 1 },
     include: { category: true },
     orderBy: { createdAt: "desc" },
   })

@@ -1,16 +1,19 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
+import { getEffectiveExpenses } from "../lib/recurrence.js"
 import { Frequency } from "@prisma/client"
 
 export const getExpenses = async (req: Request, res: Response) => {
   const { month, year } = req.query
 
+  if (month && year) {
+    const expenses = await getEffectiveExpenses(1, Number(month), Number(year))
+    res.json(expenses)
+    return
+  }
+
   const expenses = await prisma.expense.findMany({
-    where: {
-      userId: 1,
-      ...(month ? { month: Number(month) } : {}),
-      ...(year ? { year: Number(year) } : {}),
-    },
+    where: { userId: 1 },
     include: { category: true },
     orderBy: { createdAt: "desc" },
   })
