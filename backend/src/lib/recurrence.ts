@@ -1,7 +1,21 @@
 import { prisma } from "./prisma.js"
+import { Frequency } from "@prisma/client"
 
 function periodIndex(year: number, month: number): number {
   return year * 12 + month
+}
+
+// Cuántas veces al mes se repite cada frecuencia (aproximación simple, sin
+// precisión de calendario — igual criterio ya usado para BIWEEKLY).
+export const FREQUENCY_MULTIPLIER: Record<Frequency, number> = {
+  ONE_TIME: 1,
+  MONTHLY: 1,
+  BIWEEKLY: 2,
+  WEEKLY: 4,
+}
+
+export function effectiveAmount(amount: unknown, frequency: Frequency): number {
+  return Number(amount) * FREQUENCY_MULTIPLIER[frequency]
 }
 
 export async function getEffectiveIncomes(userId: number, m: number, y: number) {

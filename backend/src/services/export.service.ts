@@ -1,8 +1,9 @@
 import { Response } from "express"
 import ExcelJS from "exceljs"
 import { createRequire } from "module"
-import { getEffectiveIncomes, getEffectiveExpenses } from "../lib/recurrence.js"
+import { getEffectiveIncomes, getEffectiveExpenses, effectiveAmount } from "../lib/recurrence.js"
 import { prisma } from "../lib/prisma.js"
+import { Frequency } from "@prisma/client"
 
 const require = createRequire(import.meta.url)
 const PDFDocument = require("pdfkit")
@@ -26,7 +27,8 @@ interface ExportData {
     name: string
     annualRate: unknown
     remainingAmount: unknown
-    monthlyPayment: unknown
+    paymentAmount: unknown
+    frequency: Frequency
   }>
 }
 
@@ -56,12 +58,8 @@ function fmt(amount: number, symbol: string): string {
 function frequencyLabel(freq: string): string {
   if (freq === "MONTHLY") return "Mensual"
   if (freq === "BIWEEKLY") return "Quincenal"
+  if (freq === "WEEKLY") return "Semanal"
   return "Unico"
-}
-
-function effectiveAmount(amount: unknown, frequency: string): number {
-  const n = Number(amount)
-  return frequency === "BIWEEKLY" ? n * 2 : n
 }
 
 // ---------------------------------------------------------------------------
@@ -86,7 +84,7 @@ export async function buildExportData(
     (s, e) => s + effectiveAmount(e.amount, e.frequency), 0
   )
   const totalDebtPayments = debts.reduce(
-    (s, d) => s + Number(d.monthlyPayment), 0
+    (s, d) => s + effectiveAmount(d.paymentAmount, d.frequency), 0
   )
 
   return {
@@ -189,7 +187,7 @@ export async function generatePDF(data: ExportData, res: Response): Promise<void
   // --- Section: Debts ---
   doc.moveDown(0.5)
   drawSectionTitle(doc, "Deudas")
-  drawTableHeader(doc, ["Nombre", "Tasa", "Saldo", "Cuota/Mes"])
+  drawTableHeader(doc, ["Nombre", "Tasa", "Saldo", "Frecuencia", "Cuota"])
 
   if (data.debts.length === 0) {
     drawEmptyRow(doc, "Sin deudas registradas.")
@@ -199,7 +197,8 @@ export async function generatePDF(data: ExportData, res: Response): Promise<void
         debt.name,
         `${Number(debt.annualRate).toFixed(2)}%`,
         fmt(Number(debt.remainingAmount), symbol),
-        fmt(Number(debt.monthlyPayment), symbol),
+        frequencyLabel(debt.frequency),
+        fmt(Number(debt.paymentAmount), symbol),
       ])
     })
   }
@@ -366,15 +365,16 @@ export async function generateExcel(data: ExportData, res: Response): Promise<vo
   sheet.addRow([])
 
   // --- Debts table ---
-  addTableSection(sheet, "Deudas", ["Nombre", "Tasa anual", "Saldo restante", "Cuota mensual"],
+  addTableSection(sheet, "Deudas", ["Nombre", "Tasa anual", "Saldo restante", "Frecuencia", "Cuota"],
     data.debts.map((d) => [
       d.name,
       Number(d.annualRate) / 100,
       Number(d.remainingAmount),
-      Number(d.monthlyPayment),
+      frequencyLabel(d.frequency),
+      Number(d.paymentAmount),
     ]),
     symbol, headerFill, headerFont, cellBorders,
-    [undefined, "0.00%", undefined, undefined]
+    [undefined, "0.00%", undefined, undefined, undefined]
   )
 
   // --- Send response ---

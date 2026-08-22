@@ -1,6 +1,6 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
-import { getEffectiveIncomes, getEffectiveExpenses } from "../lib/recurrence.js"
+import { getEffectiveIncomes, getEffectiveExpenses, effectiveAmount } from "../lib/recurrence.js"
 
 // Convierte month + year a un número comparable: 2026*12 + 4 = 24316
 // Esto permite comparar periodos sin depender de Date ni zonas horarias.
@@ -25,17 +25,9 @@ export const getMonthlySummary = async (req: Request, res: Response) => {
     prisma.debt.findMany({ where: { userId: 1 } }),
   ])
 
-  const totalIncome = incomes.reduce((sum, i) => {
-    const amount = Number(i.amount)
-    return sum + (i.frequency === "BIWEEKLY" ? amount * 2 : amount)
-  }, 0)
-
-  const totalExpenses = expenses.reduce((sum, e) => {
-    const amount = Number(e.amount)
-    return sum + (e.frequency === "BIWEEKLY" ? amount * 2 : amount)
-  }, 0)
-
-  const totalDebtPayments = debts.reduce((sum, d) => sum + Number(d.monthlyPayment), 0)
+  const totalIncome = incomes.reduce((sum, i) => sum + effectiveAmount(i.amount, i.frequency), 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + effectiveAmount(e.amount, e.frequency), 0)
+  const totalDebtPayments = debts.reduce((sum, d) => sum + effectiveAmount(d.paymentAmount, d.frequency), 0)
   const totalOutflow = totalExpenses + totalDebtPayments
   const balance = totalIncome - totalOutflow
   const expenseRatio = totalIncome > 0 ? Math.round((totalOutflow / totalIncome) * 100) : 0
@@ -94,15 +86,9 @@ export const getHistoricalSummary = async (_req: Request, res: Response) => {
       prisma.debt.findMany({ where: { userId } }),
     ])
 
-    const totalIncome = incomes.reduce((sum, i) => {
-      return sum + (i.frequency === "BIWEEKLY" ? Number(i.amount) * 2 : Number(i.amount))
-    }, 0)
-
-    const totalExpenses = expenses.reduce((sum, e) => {
-      return sum + (e.frequency === "BIWEEKLY" ? Number(e.amount) * 2 : Number(e.amount))
-    }, 0)
-
-    const totalDebtPayments = debts.reduce((sum, d) => sum + Number(d.monthlyPayment), 0)
+    const totalIncome = incomes.reduce((sum, i) => sum + effectiveAmount(i.amount, i.frequency), 0)
+    const totalExpenses = expenses.reduce((sum, e) => sum + effectiveAmount(e.amount, e.frequency), 0)
+    const totalDebtPayments = debts.reduce((sum, d) => sum + effectiveAmount(d.paymentAmount, d.frequency), 0)
 
     results.push({
       month: m,

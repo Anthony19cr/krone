@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import type { Frequency } from "@/lib/frequency"
+
+export type DebtFrequency = Exclude<Frequency, "ONE_TIME">
 
 export interface Debt {
   id: number
@@ -9,7 +12,8 @@ export interface Debt {
   totalPayments: number
   paidPayments: number
   annualRate: number
-  monthlyPayment: number
+  frequency: DebtFrequency
+  paymentAmount: number
 }
 
 export interface DebtPayload {
@@ -19,6 +23,7 @@ export interface DebtPayload {
   totalPayments: number
   paidPayments: number
   annualRate: number
+  frequency: DebtFrequency
 }
 
 export function useDebts() {

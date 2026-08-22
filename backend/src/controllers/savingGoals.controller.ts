@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
+import { effectiveAmount } from "../lib/recurrence.js"
 
 function calculateProjectedDate(
   targetAmount: number,
@@ -25,15 +26,9 @@ export const getSavingGoals = async (_req: Request, res: Response) => {
   const expenses = await prisma.expense.findMany({ where: { userId: 1 } })
   const debts = await prisma.debt.findMany({ where: { userId: 1 } })
 
-  const totalIncome = incomes.reduce((sum, i) => {
-    return sum + (i.frequency === "BIWEEKLY" ? Number(i.amount) * 2 : Number(i.amount))
-  }, 0)
-
-  const totalExpenses = expenses.reduce((sum, e) => {
-    return sum + (e.frequency === "BIWEEKLY" ? Number(e.amount) * 2 : Number(e.amount))
-  }, 0)
-
-  const totalDebtPayments = debts.reduce((sum, d) => sum + Number(d.monthlyPayment), 0)
+  const totalIncome = incomes.reduce((sum, i) => sum + effectiveAmount(i.amount, i.frequency), 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + effectiveAmount(e.amount, e.frequency), 0)
+  const totalDebtPayments = debts.reduce((sum, d) => sum + effectiveAmount(d.paymentAmount, d.frequency), 0)
   const monthlyBalance = totalIncome - totalExpenses - totalDebtPayments
 
   const goalsWithProjection = goals.map((goal) => {

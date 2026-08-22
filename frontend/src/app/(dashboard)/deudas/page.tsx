@@ -3,12 +3,19 @@
 import { useState } from "react"
 import { useDebts, useCreateDebt, useUpdateDebt, useDeleteDebt, type Debt, type DebtPayload } from "@/hooks/useDebts"
 import { Modal } from "@/components/ui/Modal"
-import { Field, inputClass } from "@/components/ui/Field"
+import { Field, inputClass, selectClass } from "@/components/ui/Field"
 import { useConfig, formatAmount, CURRENCIES } from "@/hooks/useConfig"
+import { FREQ_LABELS, effectiveAmount } from "@/lib/frequency"
+
+const FREQ_SUFFIX: Record<DebtPayload["frequency"], string> = {
+  MONTHLY: "/mes",
+  BIWEEKLY: "/quincena",
+  WEEKLY: "/semana",
+}
 
 const empty: DebtPayload = {
   name: "", totalAmount: 0, remainingAmount: 0,
-  totalPayments: 12, paidPayments: 0, annualRate: 0,
+  totalPayments: 12, paidPayments: 0, annualRate: 0, frequency: "MONTHLY",
 }
 
 export default function DeudasPage() {
@@ -41,6 +48,7 @@ export default function DeudasPage() {
       totalPayments: debt.totalPayments,
       paidPayments: debt.paidPayments,
       annualRate: debt.annualRate,
+      frequency: debt.frequency,
     })
     setOpen(true)
   }
@@ -61,7 +69,7 @@ export default function DeudasPage() {
   }
 
   const totalRestante = debts.reduce((s, d) => s + Number(d.remainingAmount), 0)
-  const totalMensual = debts.reduce((s, d) => s + Number(d.monthlyPayment), 0)
+  const totalMensual = debts.reduce((s, d) => s + effectiveAmount(Number(d.paymentAmount), d.frequency), 0)
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -107,7 +115,7 @@ export default function DeudasPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold font-mono text-red-400">{fmt(Number(debt.remainingAmount))}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{fmt(Number(debt.monthlyPayment))}/mes</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{fmt(Number(debt.paymentAmount))}{FREQ_SUFFIX[debt.frequency]}</p>
                   </div>
                 </div>
 
@@ -159,6 +167,17 @@ export default function DeudasPage() {
         </div>
         <Field label="Tasa de interés anual (%)">
           <input className={inputClass} type="number" value={form.annualRate || ""} onChange={e => setForm(f => ({ ...f, annualRate: Number(e.target.value) }))} placeholder="18" />
+        </Field>
+        <Field label="Frecuencia de pago">
+          <select
+            className={selectClass}
+            value={form.frequency}
+            onChange={e => setForm(f => ({ ...f, frequency: e.target.value as DebtPayload["frequency"] }))}
+          >
+            <option value="MONTHLY">{FREQ_LABELS.MONTHLY}</option>
+            <option value="BIWEEKLY">{FREQ_LABELS.BIWEEKLY}</option>
+            <option value="WEEKLY">{FREQ_LABELS.WEEKLY}</option>
+          </select>
         </Field>
       </Modal>
     </div>

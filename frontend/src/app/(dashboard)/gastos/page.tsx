@@ -8,18 +8,7 @@ import { Field, inputClass, selectClass } from "@/components/ui/Field"
 import { MonthSelector } from "@/components/dashboard/MonthSelector"
 import { ExportMenu } from "@/components/ui/ExportMenu"
 import { useConfig, formatAmount, CURRENCIES } from "@/hooks/useConfig"
-
-const FREQ_LABELS: Record<string, string> = {
-  MONTHLY: "Mensual",
-  BIWEEKLY: "Quincenal",
-  ONE_TIME: "Único",
-}
-
-const FREQ_COLORS: Record<string, string> = {
-  MONTHLY: "bg-emerald-50 text-emerald-600",
-  BIWEEKLY: "bg-blue-50 text-blue-600",
-  ONE_TIME: "bg-gray-100 text-gray-500",
-}
+import { FREQ_LABELS, FREQ_COLORS, effectiveAmount } from "@/lib/frequency"
 
 const empty: ExpensePayload = {
   name: "", amount: 0, recurring: false,
@@ -81,7 +70,7 @@ export default function GastosPage() {
     await remove.mutateAsync(id)
   }
 
-  const total = expenses.reduce((s, e) => s + (e.frequency === "BIWEEKLY" ? Number(e.amount) * 2 : Number(e.amount)), 0)
+  const total = expenses.reduce((s, e) => s + effectiveAmount(Number(e.amount), e.frequency), 0)
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -183,6 +172,7 @@ export default function GastosPage() {
             <option value="ONE_TIME">Único</option>
             <option value="MONTHLY">Mensual</option>
             <option value="BIWEEKLY">Quincenal</option>
+            <option value="WEEKLY">Semanal</option>
           </select>
         </Field>
       </Modal>

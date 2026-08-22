@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
-import { calculateMonthlyPayment } from "../services/debt.service.js"
+import { calculatePayment } from "../services/debt.service.js"
+import { Frequency } from "@prisma/client"
 
 export const getDebts = async (_req: Request, res: Response) => {
   const debts = await prisma.debt.findMany({
@@ -12,7 +13,7 @@ export const getDebts = async (_req: Request, res: Response) => {
 }
 
 export const createDebt = async (req: Request, res: Response) => {
-  const { name, totalAmount, remainingAmount, totalPayments, paidPayments, annualRate } = req.body
+  const { name, totalAmount, remainingAmount, totalPayments, paidPayments, annualRate, frequency } = req.body
 
   if (!name || !totalAmount || !remainingAmount || !totalPayments || annualRate === undefined) {
     res.status(400).json({ error: "name, totalAmount, remainingAmount, totalPayments and annualRate are required" })
@@ -20,11 +21,13 @@ export const createDebt = async (req: Request, res: Response) => {
   }
 
   const paid = paidPayments ?? 0
+  const finalFrequency: Frequency = frequency ?? "MONTHLY"
   const remainingPayments = totalPayments - paid
-  const monthlyPayment = calculateMonthlyPayment(
+  const paymentAmount = calculatePayment(
     Number(remainingAmount),
     Number(annualRate),
-    remainingPayments
+    remainingPayments,
+    finalFrequency
   )
 
   const debt = await prisma.debt.create({
@@ -35,7 +38,8 @@ export const createDebt = async (req: Request, res: Response) => {
       totalPayments: Number(totalPayments),
       paidPayments: paid,
       annualRate,
-      monthlyPayment,
+      frequency: finalFrequency,
+      paymentAmount,
       userId: 1,
     },
   })
@@ -45,7 +49,7 @@ export const createDebt = async (req: Request, res: Response) => {
 
 export const updateDebt = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, totalAmount, remainingAmount, totalPayments, paidPayments, annualRate } = req.body
+  const { name, totalAmount, remainingAmount, totalPayments, paidPayments, annualRate, frequency } = req.body
 
   const existing = await prisma.debt.findUnique({ where: { id: Number(id) } })
   if (!existing) {
@@ -57,12 +61,14 @@ export const updateDebt = async (req: Request, res: Response) => {
   const finalTotalPayments = totalPayments ?? existing.totalPayments
   const finalPaidPayments = paidPayments ?? existing.paidPayments
   const finalAnnualRate = annualRate ?? Number(existing.annualRate)
+  const finalFrequency: Frequency = frequency ?? existing.frequency
   const remainingPayments = finalTotalPayments - finalPaidPayments
 
-  const monthlyPayment = calculateMonthlyPayment(
+  const paymentAmount = calculatePayment(
     finalRemainingAmount,
     finalAnnualRate,
-    remainingPayments
+    remainingPayments,
+    finalFrequency
   )
 
   const debt = await prisma.debt.update({
@@ -74,7 +80,8 @@ export const updateDebt = async (req: Request, res: Response) => {
       totalPayments,
       paidPayments,
       annualRate,
-      monthlyPayment,
+      frequency: finalFrequency,
+      paymentAmount,
     },
   })
 

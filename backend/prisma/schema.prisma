@@ -13,6 +13,7 @@ datasource db {
 enum Frequency {
   MONTHLY
   BIWEEKLY
+  WEEKLY
   ONE_TIME
 }
 
@@ -114,14 +115,15 @@ model Expense {
 // ---------------------------------------------------------------------------
 
 model Debt {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   name            String
-  totalAmount     Decimal  @db.Decimal(12, 2)
-  remainingAmount Decimal  @db.Decimal(12, 2)
+  totalAmount     Decimal   @db.Decimal(12, 2)
+  remainingAmount Decimal   @db.Decimal(12, 2)
   totalPayments   Int
-  paidPayments    Int      @default(0)
-  annualRate      Decimal  @db.Decimal(5, 2)  // percentage, e.g. 18.00
-  monthlyPayment  Decimal  @db.Decimal(12, 2)  // calculated on create/update
+  paidPayments    Int       @default(0)
+  annualRate      Decimal   @db.Decimal(5, 2)  // percentage, e.g. 18.00
+  frequency       Frequency @default(MONTHLY)  // payment frequency: MONTHLY, BIWEEKLY or WEEKLY
+  paymentAmount   Decimal   @db.Decimal(12, 2)  // amount per payment period, calculated on create/update
   userId          Int
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())

@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import type { Category } from "./useIncomes"
+import type { Frequency } from "@/lib/frequency"
 
 export interface Expense {
   id: number
   name: string
   amount: number
   recurring: boolean
-  frequency: "MONTHLY" | "BIWEEKLY" | "ONE_TIME"
+  frequency: Frequency
   month: number
   year: number
   categoryId: number
@@ -18,7 +19,7 @@ export interface ExpensePayload {
   name: string
   amount: number
   recurring: boolean
-  frequency: "MONTHLY" | "BIWEEKLY" | "ONE_TIME"
+  frequency: Frequency
   month: number
   year: number
   categoryId: number
