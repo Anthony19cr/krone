@@ -130,3 +130,64 @@ historial cronológico de trabajo y decisiones, separado del estado actual
 (`context.md`) y de las reglas fijas (`CLAUDE.md`). Se referenció en
 `CLAUDE.md` raíz como parte del flujo de trabajo a actualizar al terminar
 cada tarea relevante.
+
+---
+
+## 2026-08-22 — Auditoría general y plan de ahorro por deuda según frecuencia de ingresos
+
+**Contexto:** El usuario pidió una auditoría de cada sección de Krone
+comparándola contra apps de finanzas personales similares (YNAB, Fintonic,
+PocketGuard, EveryDollar), y propuso una mejora concreta: dado que su
+ingreso fuerte es semanal pero paga una deuda mensualmente, quería que el
+sistema sugiera cuánto apartar de cada ingreso semanal para completar la
+cuota mensual — explícitamente sin depender de un agente de IA por costo de
+tokens.
+
+**Qué se hizo (auditoría):** Se revisó cada sección del código (dashboard,
+ingresos/gastos, deudas, metas, historial, categorías, export) y se
+documentaron ~20 mejoras posibles en el nuevo archivo `mejoras.md`
+(presupuestos por categoría, patrimonio neto, recordatorios de vencimiento,
+transacciones con fecha real, snowball/avalanche, modo oscuro, etc.).
+
+**Decisión (algoritmo):** El desglose de ahorro se resolvió con aritmética
+pura, reutilizando `FREQUENCY_MULTIPLIER` (la misma tabla que ya normaliza
+ingresos/gastos/deudas a "por mes"): la cuota mensual-equivalente de una
+deuda se reparte entre las frecuencias de ingreso recurrente activas del
+usuario, proporcional al peso de cada una en su ingreso mensual total. Se
+eligió la versión "proporcional completa" (reparte entre todos los ingresos
+activos) en vez de asumir un solo "ingreso principal", porque el usuario
+suele tener ingresos mixtos (semanal + quincenal + mensual) y una versión
+simple hubiera sido menos precisa.
+
+**Qué se implementó:**
+- `backend/src/lib/savingsPlan.ts` (nuevo) — `buildSavingsPlan(monthlyTarget, incomes)`.
+- `backend/src/controllers/debts.controller.ts` — `GET /debts` ahora agrega
+  `savingsPlan` a cada deuda, calculado contra los ingresos efectivos del
+  mes actual (`getEffectiveIncomes`).
+- `frontend/src/hooks/useDebts.ts` — nuevo tipo `SavingsPlanItem`, campo
+  `savingsPlan` en `Debt`.
+- `frontend/src/app/(dashboard)/deudas/page.tsx` — tarjeta agregada al
+  inicio de la página con el total a apartar por frecuencia sumando todas
+  las deudas activas, y un desglose por deuda individual debajo de su
+  barra de progreso.
+
+**Nota de QA:** Durante el desarrollo se encontró (en `backend/.dev.log`) un
+error transitorio real: un intento de edición de la deuda "German" falló
+con `Argument paymentAmount is missing` porque el hot-reload de `tsx watch`
+recargó el controller viejo (todavía con el campo `monthlyPayment`) contra
+el cliente de Prisma ya regenerado con el nuevo nombre `paymentAmount`, en
+la ventana entre migrar el schema y terminar de editar el controller en la
+tarea anterior. No corrompió datos — la edición simplemente no se guardó
+(la deuda quedó en su estado previo) y el problema ya no existe con el
+código actual. Se verificó con `curl` contra `/api/debts` que el endpoint
+responde correctamente con datos reales del usuario.
+
+**Verificación:** `npx tsc --noEmit` sin errores nuevos en backend ni
+frontend (el único error de `tsc` en frontend es de un artefacto de tipos
+generado por Next.js, no relacionado con este cambio). Las 7 páginas del
+frontend siguen respondiendo 200.
+
+**Pendiente al cierre de esta entrada:** commitear y pushear los cambios de
+`savingsPlan` (`backend/src/lib/savingsPlan.ts`, `debts.controller.ts`,
+`useDebts.ts`, `deudas/page.tsx`) junto con `mejoras.md` y esta entrada de
+bitácora.

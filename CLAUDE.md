@@ -85,6 +85,7 @@ Seguridad es transversal: consultarlo siempre que la tarea involucre endpoints, 
 | `CLAUDE.md` (este archivo) | Orquestador. Punto de entrada para cualquier tarea. |
 | `context.md` | Estado vivo del proyecto: arquitectura, cómo levantarlo, modelo de datos, deuda técnica conocida. Se actualiza conforme el proyecto avanza (se sobrescribe, no acumula historial). |
 | `bitacora.md` | Historial cronológico: qué se hizo, qué se decidió y por qué, sesión a sesión. Se agrega una entrada nueva al final, nunca se reescribe lo anterior. |
+| `mejoras.md` | Backlog de mejoras/funciones pendientes, numerado solo para referencia (no indica orden ni prioridad). Se tacha el título de un ítem al completarlo, sin borrar el detalle. |
 | `backend/CLAUDE.md` | Agente de backend: Express, API REST, servicios, convenciones. |
 | `frontend/CLAUDE.md` | Agente de frontend: Next.js, componentes, hooks, temas. |
 | `database/CLAUDE.md` | Agente de base de datos: schema Prisma, migraciones, convenciones de datos. |
@@ -97,7 +98,7 @@ Seguridad es transversal: consultarlo siempre que la tarea involucre endpoints, 
 
 Al iniciar una sesión de trabajo sin una tarea puntual asignada:
 
-1. Leer `context.md` completo y las últimas 2-3 entradas de `bitacora.md`.
+1. Leer `context.md` completo, las últimas 2-3 entradas de `bitacora.md`, y revisar `mejoras.md` por si hay algo pendiente relevante a la tarea.
 2. Verificar si el backend (puerto 3001, `/health`) y el frontend (puerto 3000) siguen corriendo; si no, levantarlos (`npm run dev` en cada carpeta).
 3. Revisar `git log`/`git status` para confirmar si hay trabajo sin commitear desde la última entrada de la bitácora.
 4. Con ayuda de `qa/CLAUDE.md`, probar en el navegador cualquier funcionalidad tocada en la sesión anterior antes de continuar con trabajo nuevo.
