@@ -191,3 +191,51 @@ frontend siguen respondiendo 200.
 `savingsPlan` (`backend/src/lib/savingsPlan.ts`, `debts.controller.ts`,
 `useDebts.ts`, `deudas/page.tsx`) junto con `mejoras.md` y esta entrada de
 bitácora.
+
+---
+
+## 2026-08-22 — Accesos directos de escritorio para levantar/detener el proyecto
+
+**Contexto:** El usuario pidió poder levantar Krone con doble click desde el
+escritorio, sin tener que abrir una terminal y correr `npm run dev` en dos
+carpetas. Después de una primera versión con ventanas de consola visibles,
+pidió que no aparezca ninguna ventana.
+
+**Decisión (patrón sin ventana):** Un `.bat` con `start cmd /k` siempre deja
+la ventana de consola visible (es su comportamiento por diseño, no hay flag
+para evitarlo). El patrón que sí oculta completamente la ventana en Windows
+es: `wscript.exe` ejecutando un `.vbs` (que por asociación de sistema corre
+sin consola) que a su vez invoca `powershell.exe -WindowStyle Hidden` vía
+`WshShell.Run(cmd, 0, False)` — el `0` es la clave (ventana oculta), no
+`-WindowStyle Hidden` por sí solo (PowerShell puede mostrar un flash de
+consola antes de ocultarse si se lanza directo). El script de PowerShell
+lanza backend y frontend con `Start-Process -WindowStyle Hidden`, cada uno
+como `cmd.exe /c npm run dev > .dev.log 2>&1` para no perder los logs.
+
+**Qué se implementó:**
+- `start-krone.vbs` + `start-krone.ps1` (raíz del proyecto) — verifica el
+  servicio de PostgreSQL, levanta backend (puerto 3001) y frontend (puerto
+  3000) ocultos, espera 10s y abre `http://localhost:3000`.
+- `stop-krone.vbs` + `stop-krone.ps1` — busca todo proceso `node`/`cmd` cuyo
+  `CommandLine` contenga la ruta del proyecto (`$PSScriptRoot`) y lo mata
+  con `Stop-Process -Force`; al terminar muestra un `MsgBox` de
+  confirmación.
+- Dos accesos directos en el escritorio del usuario (`Krone.lnk` →
+  `start-krone.vbs`, `Detener Krone.lnk` → `stop-krone.vbs`), creados con
+  `WScript.Shell.CreateShortcut` vía PowerShell.
+- Se eliminó `start-krone.bat` (versión anterior con ventanas visibles).
+
+**Verificación:** Se probó el ciclo completo (detener → confirmar puertos
+3000/3001 libres y cero procesos residuales por `CommandLine` → levantar de
+nuevo vía el `.vbs` → confirmar `/health` y `/` responden 200, y que ningún
+proceso relacionado tiene `MainWindowHandle` distinto de 0). Durante la
+primera prueba del `.bat` original se detectaron procesos duplicados de
+`tsx watch` y `next dev` (el usuario ya había probado el acceso directo
+manualmente); se limpiaron antes de la verificación final.
+
+**Nota:** Estos scripts no están commiteados todavía — son herramientas de
+conveniencia local, no parte del código de la app. Quedan pendientes de que
+el usuario decida si los quiere versionados en el repo.
+
+**Archivos clave:** `start-krone.vbs`, `start-krone.ps1`, `stop-krone.vbs`,
+`stop-krone.ps1` (todos nuevos, raíz del proyecto).
