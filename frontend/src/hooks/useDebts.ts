@@ -4,6 +4,13 @@ import type { Frequency } from "@/lib/frequency"
 
 export type DebtFrequency = Exclude<Frequency, "ONE_TIME">
 
+export interface SavingsPlanItem {
+  frequency: DebtFrequency
+  monthlyEquivalent: number
+  weight: number
+  amountToSetAside: number
+}
+
 export interface Debt {
   id: number
   name: string
@@ -14,6 +21,7 @@ export interface Debt {
   annualRate: number
   frequency: DebtFrequency
   paymentAmount: number
+  savingsPlan: SavingsPlanItem[]
 }
 
 export interface DebtPayload {

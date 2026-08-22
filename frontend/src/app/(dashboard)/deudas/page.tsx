@@ -71,6 +71,14 @@ export default function DeudasPage() {
   const totalRestante = debts.reduce((s, d) => s + Number(d.remainingAmount), 0)
   const totalMensual = debts.reduce((s, d) => s + effectiveAmount(Number(d.paymentAmount), d.frequency), 0)
 
+  const aggregatedPlan = debts.reduce<Partial<Record<DebtPayload["frequency"], number>>>((acc, debt) => {
+    debt.savingsPlan.forEach((item) => {
+      acc[item.frequency] = (acc[item.frequency] ?? 0) + item.amountToSetAside
+    })
+    return acc
+  }, {})
+  const aggregatedPlanEntries = Object.entries(aggregatedPlan) as [DebtPayload["frequency"], number][]
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6 mt-6">
@@ -88,6 +96,25 @@ export default function DeudasPage() {
           + Agregar
         </button>
       </div>
+
+      {aggregatedPlanEntries.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
+          <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">
+            Plan de ahorro sugerido · para cubrir todas tus cuotas
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {aggregatedPlanEntries.map(([frequency, amount]) => (
+              <div key={frequency} className="bg-gray-50 rounded-xl p-3">
+                <p className="text-xs text-gray-400 mb-1">{FREQ_LABELS[frequency]}</p>
+                <p className="text-sm font-semibold font-mono" style={{ color: "var(--color-primary)" }}>
+                  {fmt(amount)}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">apartar cada vez</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="p-8 text-center text-sm text-gray-300">Cargando...</div>
@@ -130,6 +157,21 @@ export default function DeudasPage() {
                   <span>{pct}% pagado</span>
                   <span>Total: {fmt(Number(debt.totalAmount))}</span>
                 </div>
+
+                {debt.savingsPlan.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-gray-50">
+                    <p className="text-xs text-gray-400 mb-2">Plan de ahorro sugerido para esta cuota</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {debt.savingsPlan.map((item) => (
+                        <span key={item.frequency} className="text-xs text-gray-600">
+                          <span className="font-medium">{FREQ_LABELS[item.frequency]}:</span>{" "}
+                          <span className="font-mono">{fmt(item.amountToSetAside)}</span>{" "}
+                          <span className="text-gray-400">({Math.round(item.weight * 100)}%)</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3 mt-4 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
                   <button onClick={() => openEdit(debt)} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Editar</button>

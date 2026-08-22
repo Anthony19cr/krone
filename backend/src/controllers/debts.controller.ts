@@ -1,6 +1,8 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
 import { calculatePayment } from "../services/debt.service.js"
+import { getEffectiveIncomes, effectiveAmount } from "../lib/recurrence.js"
+import { buildSavingsPlan } from "../lib/savingsPlan.js"
 import { Frequency } from "@prisma/client"
 
 export const getDebts = async (_req: Request, res: Response) => {
@@ -9,7 +11,18 @@ export const getDebts = async (_req: Request, res: Response) => {
     orderBy: { createdAt: "desc" },
   })
 
-  res.json(debts)
+  const now = new Date()
+  const incomes = await getEffectiveIncomes(1, now.getMonth() + 1, now.getFullYear())
+
+  const debtsWithPlan = debts.map((debt) => ({
+    ...debt,
+    savingsPlan: buildSavingsPlan(
+      effectiveAmount(debt.paymentAmount, debt.frequency),
+      incomes
+    ),
+  }))
+
+  res.json(debtsWithPlan)
 }
 
 export const createDebt = async (req: Request, res: Response) => {
